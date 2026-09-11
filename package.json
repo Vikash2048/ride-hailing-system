@@ -1,0 +1,28 @@
+{
+  "name": "ride_hailing_system",
+  "version": "1.0.0",
+  "description": "Implement user/ola type application",
+  "main": "server.js",
+  "scripts": {
+    "test": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vikash2048/ride-hailing-system.git"
+  },
+  "author": "vikash",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Vikash2048/ride-hailing-system/issues"
+  },
+  "homepage": "https://github.com/Vikash2048/ride-hailing-system#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.23.0",
+    "redis": "^6.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
