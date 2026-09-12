@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { pool } from "./config/db.js";
 import { redis } from "./config/redis.js";
+import userRouter from "./routes/userRoutes.js";
 
 dotenv.config();
 
@@ -9,6 +10,8 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+app.use("/api/v1/users", userRouter);
 
 const startServer = async () => {
     try {
