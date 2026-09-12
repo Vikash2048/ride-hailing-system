@@ -109,4 +109,30 @@ const updateLocation = async (req, res) => {
     }
 }
 
-export default { createDriver, goOnline, goOffline, updateLocation };
+const findNearbyDrivers = async (req, res) => {
+    try {
+        const { latitude, longitude, radius } = req.query;
+
+        if (latitude === undefined || longitude === undefined || radius === undefined) {
+            return res.status(400).json({
+                error: "latitude, longitude and radius are required"
+            });
+        }
+
+        const drivers = await driverService.findNearbyDrivers(
+            Number(latitude),
+            Number(longitude),
+            Number(radius)
+        );
+
+        return res.json({ drivers });
+    } catch (error) {
+        console.log(error);
+
+        return res.status(500).json({
+            error: "Failed to find nearby drivers"
+        });
+    }
+};
+
+export default { createDriver, goOnline, goOffline, updateLocation, findNearbyDrivers };
