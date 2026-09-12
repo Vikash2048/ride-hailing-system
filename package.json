@@ -2,9 +2,11 @@
   "name": "ride_hailing_system",
   "version": "1.0.0",
   "description": "Implement user/ola type application",
-  "main": "server.js",
+  "main": "app.js",
+  "type": "module",
   "scripts": {
-    "test": "nodemon server.js"
+    "test": "nodemon ./src/app.js",
+    "dev": "nodemon ./src/app.js"
   },
   "repository": {
     "type": "git",
