@@ -10,7 +10,7 @@ const updateDriverStatus = async (driverId, status) => {
 };
 
 const findNearbyDrivers = async (latitude, longitude, radiusKm) => {
-    const drivers = await redis.geoSearch(
+    const driversIds = await redis.geoSearch(
         "drivers:locations",
         {
             longitude,
@@ -22,7 +22,19 @@ const findNearbyDrivers = async (latitude, longitude, radiusKm) => {
         }
     );
 
-    return drivers;
+    const availableDrivers = [];
+
+    for (const driverId of driversIds){
+        const status = await redis.get(
+            `driver:status:${driverId}`
+        );
+
+        if (status === "AVAILABLE") {
+            availableDrivers.push(driverId);
+        }
+    }
+
+    return availableDrivers;
 };
 
 export default { createDriver, updateDriverStatus, findNearbyDrivers };
