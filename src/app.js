@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { pool } from "./config/db.js";
 import { redis } from "./config/redis.js";
 import userRouter from "./routes/userRoutes.js";
+import driverRouter from "./routes/driverRoutes.js";
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ const PORT = 3000;
 app.use(express.json());
 
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/drivers", driverRouter);
 
 const startServer = async () => {
     try {
