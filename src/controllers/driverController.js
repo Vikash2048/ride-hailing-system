@@ -1,3 +1,4 @@
+import { redis } from "../config/redis.js";
 import driverService from "../services/driverService.js";
 
 const createDriver = async (req, res) => {
@@ -39,6 +40,11 @@ const goOnline = async (req, res) => {
             });
         }
 
+        await redis.set(
+            `driver:status:${driverId}`,
+            "AVAILABLE"
+        );
+
         return res.json(driver);
     } catch (error) {
         console.error(error);
@@ -48,4 +54,30 @@ const goOnline = async (req, res) => {
     }
 };
 
-export default { createDriver, goOnline };
+const goOffline = async (req, res) => {
+    try {
+        const { driverId } = req.params;
+
+        if (!driverId) {
+            res.status(400).json({
+                error: "Driver id missing"
+            });
+        }
+
+        const driver = await driverService.updateDriverStatus(driverId, "OFFLINE");
+
+        await redis.set(
+            `driver:status:${driverId}`,
+            "OFFLINE"
+        );
+
+        return res.json(driver);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            error: "Failed to update driver status"
+        });
+    }
+};
+
+export default { createDriver, goOnline, goOffline };
