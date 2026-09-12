@@ -80,4 +80,33 @@ const goOffline = async (req, res) => {
     }
 };
 
-export default { createDriver, goOnline, goOffline };
+const updateLocation = async (req, res) => {
+    try {
+        const { driverId } = req.params;
+        const { latitude, longitude } = req.body;
+
+        if (latitude === undefined || longitude === undefined) {
+            return res.status(400).json({
+                error: "latitude and longitude are required"
+            });
+        }
+
+        await redis.geoAdd("drivers:locations", {
+            longitude,
+            latitude,
+            member: driverId
+        });
+
+        res.json({
+            message: "Location updated"
+        });
+    } catch (error) {
+        console.log(error);
+
+        return res.status(500).json({
+            error: "Failed to update location"
+        });
+    }
+}
+
+export default { createDriver, goOnline, goOffline, updateLocation };
