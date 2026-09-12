@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "nodemon ./src/app.js",
-    "dev": "nodemon ./src/app.js"
+    "dev": "nodemon ./src/app.js",
+    "migrate": "node-pg-migrate"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,7 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "node-pg-migrate": "^9.0.0",
     "pg": "^8.23.0",
     "redis": "^6.2.1"
   },
