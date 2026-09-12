@@ -11,4 +11,16 @@ const createDriver = async (userId) => {
     return result.rows[0];
 };
 
-export default { createDriver };
+const updateDriverStatus = async (driverId, status) => {
+    const result = await pool.query(
+        `UPDATE drivers
+        SET status = $1
+        WHERE id = $2
+        RETURNING id, user_id, status`,
+        [status, driverId]
+    );
+
+    return result.rows[0];
+};
+
+export default { createDriver, updateDriverStatus };

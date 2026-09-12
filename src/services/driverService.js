@@ -4,4 +4,8 @@ const createDriver = async (userId) => {
     return await driverRepository.createDriver(userId);
 };
 
-export default { createDriver };
+const updateDriverStatus = async (driverId, status) => {
+    return await driverRepository.updateDriverStatus(driverId, status);
+}
+
+export default { createDriver, updateDriverStatus };

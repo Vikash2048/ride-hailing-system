@@ -21,4 +21,31 @@ const createDriver = async (req, res) => {
     }
 };
 
-export default { createDriver };
+const goOnline = async (req, res) => {
+    try {
+        const { driverId } = req.params;
+
+        if (!driverId) {
+            return res.status(400).json({
+                error: "driverId is required"
+            });
+        }
+
+        const driver = await driverService.updateDriverStatus(driverId, "AVAILABLE");
+
+        if (!driver) {
+            return res.status(404).json({
+                error: "Driver not found"
+            });
+        }
+
+        return res.json(driver);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            error: "Failed to update driver status"
+        });
+    }
+};
+
+export default { createDriver, goOnline };
