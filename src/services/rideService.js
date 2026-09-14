@@ -23,4 +23,9 @@ const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng)
     return ride;
 };
 
-export default { createRide };
+const acceptRide = async (rideId, driverId) => {
+    const ride = await riderRepository.acceptRide(rideId, driverId);
+    return ride;
+}
+
+export default { createRide, acceptRide };
