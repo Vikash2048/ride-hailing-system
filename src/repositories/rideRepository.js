@@ -36,4 +36,19 @@ const assignDriver = async (rideId, driverId) => {
     return result.rows[0];
 }
 
-export default { createRide, assignDriver };
+const acceptRide = async (rideId, driverId) => {
+    const result = await pool.query(
+        `UPDATE rides
+        SET status = 'ACCEPTED',
+            accepted_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+            AND driver_id = $2
+            AND status = 'REQUESTED'
+        RETURNING *`,
+        [rideId, driverId]
+    );
+
+    return result.rows[0];
+}
+
+export default { createRide, assignDriver, acceptRide };

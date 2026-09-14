@@ -28,4 +28,26 @@ const createRide = async (req, res) => {
     }
 };
 
-export default { createRide };
+const acceptRide = async (req, res) => {
+    try {
+        const { rideId } = req.params;
+        const { driverId }  = req.body;
+
+        const ride = await rideService.acceptRide(rideId, driverId);
+
+        if (!ride) {
+            return res.status(409).json({
+                error: "Ride cannot be accepted"
+            });
+        }
+
+        res.json(ride);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            error: "Failed to accept ride"
+        });
+    }
+}
+
+export default { createRide, acceptRide };
