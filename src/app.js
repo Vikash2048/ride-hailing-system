@@ -4,6 +4,7 @@ import { pool } from "./config/db.js";
 import { redis } from "./config/redis.js";
 import userRouter from "./routes/userRoutes.js";
 import driverRouter from "./routes/driverRoutes.js";
+import rideRouter from "./routes/rideRoutes.js"
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/drivers", driverRouter);
+app.use("/api/v1/rides", rideRouter);
 
 const startServer = async () => {
     try {
