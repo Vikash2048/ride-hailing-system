@@ -6,7 +6,7 @@ const router = express.Router();
 router.post("/:driverId/online", driverController.goOnline);
 router.post("/:driverId/offline", driverController.goOffline);
 router.post("/:driverId/location", driverController.updateLocation);
-router.post("/nearby", driverController.findNearbyDrivers);
+router.get("/nearby", driverController.findNearbyDrivers);
 router.post("/", driverController.createDriver);
 
 export default router;
