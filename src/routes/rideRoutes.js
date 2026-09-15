@@ -6,5 +6,6 @@ const router = express.Router();
 router.post("/", rideController.createRide);
 router.post("/:rideId/accept",rideController.acceptRide);
 router.post("/:rideId/reject",rideController.rejectRide);
+router.post("/:rideId/arriving", rideController.driverArriving);
 
 export default router;

@@ -127,4 +127,8 @@ const matchDriver = async (ride, drivers) => {
     return null;
 }
 
-export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver };
+const driverArriving = async (rideId, driverId) => {
+    return await riderRepository.driverArriving(rideId, driverId);
+}
+
+export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver, driverArriving };
