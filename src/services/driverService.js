@@ -30,10 +30,6 @@ const findNearbyDrivers = async (latitude, longitude, radiusKm) => {
         }
     );
 
-    for(const driver of drivers) {
-        console.log(driver)
-    }
-
     const availableDrivers = [];
 
     for (const driver of drivers) {
@@ -65,7 +61,7 @@ local locked = redis.call(
     ARGV[1],
     "NX",
     "EX",
-    10
+    20
 )
 
 if not locked then
@@ -78,7 +74,7 @@ return 1
 `;
 
 
-const reserverDriver = async (driverId, rideId) => {
+const reserveDriver = async (driverId, rideId) => {
     const statusKey = `driver:status:${driverId}`;
     const lockKey = `driver:lock:${driverId}`;
 
@@ -89,34 +85,38 @@ const reserverDriver = async (driverId, rideId) => {
 
     return result === 1;
 
-    
-    // const lockKey = `driver:lock:${driverId}`;
-    // const statusKey = `driver:status:${driverId}`;
-
-    // const result = await redis.set(
-    //     lockKey,
-    //     rideId,
-    //     {
-    //         NX: true,
-    //         EX: 10
-    //     }
-    // );
-
-    // if (!result) {
-    //     return false;
-    // }
-
-    // const status = await redis.get(statusKey);
-
-    // if (status !== "AVAILABLE") {
-    //     await redis.del(lockKey);
-    //     return false;
-    // }
-
-    // await redis.set(statusKey, "BUSY");
-
-    // return true;
-
 }
 
-export default { createDriver, updateDriverStatus, findNearbyDrivers, reserverDriver };
+const releaseDriver = async (driverId, rideId) => {
+    const lockKey = `driver:lock:${driverId}`;
+    const statusKey = `driver:status:${driverId}`
+
+    const lockRideId = await redis.get(lockKey);
+
+    // Don't release someone else's reservation
+    if (lockRideId !== rideId) {
+        return false;
+    }
+
+    await redis.del(lockKey);
+    await redis.set(statusKey, "AVAILABLE");
+
+    return true;
+}
+
+const confirmDriver = async (driverId, rideId) => {
+    const lockKey = `driver:lock:${driverId}`;
+    const lockRideId = await redis.get(lockKey);
+
+    if (lockRideId !== rideId) {
+        return false;
+    }
+
+    // Reservation is confirm
+    // Driver remains BUSY
+    await redis.del(lockKey);
+
+    return true;
+}
+
+export default { createDriver, updateDriverStatus, findNearbyDrivers, reserveDriver, releaseDriver, confirmDriver };

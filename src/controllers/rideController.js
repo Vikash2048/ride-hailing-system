@@ -9,6 +9,7 @@ const createRide = async (req, res) => {
                 error: "Invalid ride request"
             });
         }
+        console.log("creating ride...")
 
         const ride = await rideService.createRide(
             riderId,
@@ -18,7 +19,8 @@ const createRide = async (req, res) => {
             dropoff.longitude
         );
 
-        res.status(201).json(ride);
+        res.status(201).json(ride)
+
     } catch (error) {
         console.error(error);
 
@@ -50,4 +52,27 @@ const acceptRide = async (req, res) => {
     }
 }
 
-export default { createRide, acceptRide };
+const rejectRide = async (req, res) => {
+    try {
+        const { rideId } = req. params;
+        const { driverId } = req.body;
+
+        const ride = await rideService.rejectRide(rideId, driverId);
+
+        if (!ride) {
+            return res.status(400).json({
+                error: "Ride connot be rejected"
+            });
+        }
+
+        res.json(ride);
+    } catch (error) {
+        console.log(error);
+
+        res.status(500).json({
+            error: "Failed to reject ride"
+        })
+    }
+}
+
+export default { createRide, acceptRide, rejectRide };
