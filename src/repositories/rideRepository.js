@@ -51,4 +51,31 @@ const acceptRide = async (rideId, driverId) => {
     return result.rows[0];
 }
 
-export default { createRide, assignDriver, acceptRide };
+const rejectRide = async (rideId, driverId) => {
+    const result = await pool.query(
+         `SELECT *
+         FROM rides
+         WHERE id = $1
+           AND driver_id = $2
+           AND status = 'REQUESTED'`,
+        [rideId, driverId]
+    );
+
+    return result.rows[0];
+}
+
+const clearDriver = async (rideId, driverId) => {
+    const result = await pool.query(
+        `UPDATE rides
+         SET driver_id = NULL
+         WHERE id = $1
+           AND driver_id = $2
+           AND status = 'REQUESTED'
+         RETURNING *`,
+        [rideId, driverId]
+    );
+
+    return result.rows[0];
+}
+
+export default { createRide, assignDriver, acceptRide, rejectRide, clearDriver };
