@@ -1,6 +1,7 @@
 import riderRepository from "../repositories/rideRepository.js";
 import driverService from "./driverService.js";
 import { redis } from "../config/redis.js";
+import fareService from "./fareService.js";
 
 const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng) => {
     //1. create ride
@@ -127,4 +128,24 @@ const matchDriver = async (ride, drivers) => {
     return null;
 }
 
-export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver };
+const driverArriving = async (rideId, driverId) => {
+    return await riderRepository.driverArriving(rideId, driverId);
+}
+
+const startRide = async (rideId, driverId) => {
+    return await riderRepository.startRide(rideId, driverId);
+}
+
+const completeRide = async (rideId, driverId) => {
+    const ride = await riderRepository.getRideById(rideId);
+
+    if (!ride) {
+        return null;
+    }
+
+    const fare = await fareService.calculateFare(ride);
+
+    return await riderRepository.completeRide(rideId, driverId, fare);
+}
+
+export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver, driverArriving, startRide, completeRide };

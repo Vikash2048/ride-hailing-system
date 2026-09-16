@@ -75,4 +75,75 @@ const rejectRide = async (req, res) => {
     }
 }
 
-export default { createRide, acceptRide, rejectRide };
+const driverArriving = async (req, res) => {
+    try {
+        const { rideId } = req.params;
+        const { driverId } = req.body;
+
+        console.log("driverArriving: ", rideId, driverId)
+
+        const ride = await rideService.driverArriving(rideId, driverId);
+
+        console.log("ride:", ride)
+
+        if (!ride) {
+            return res.status(409).json({
+                error: "Ride cannot be marked as arriving"
+            });
+        }
+
+        res.json(ride);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            error: "Failed to update ride status"
+        });
+    }
+}
+
+const startRide = async (req, res) => {
+    try {
+        const { rideId } = req.params;
+        const { driverId } = req.body;
+
+        const ride = await rideService.startRide(rideId, driverId);
+
+        if (!ride) {
+            res.status(409).json({
+                error: "Ride cannot be started"
+            });
+        }
+
+        res.json(ride);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            error: "Failed to start ride"
+        });
+    }
+}
+
+const compeleteRide = async (req, res) => {
+    try {
+        const { rideId } = req.params;
+        const { driverId } = req.body;
+
+        const ride = await rideService.completeRide(rideId, driverId);
+
+        if (!ride) {
+            return res.status(409).json({
+                error: "Ride cannot be completed"
+            });
+        }
+
+        res.json(ride);
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: "Failed to complete ride"
+        })
+    }
+}
+
+export default { createRide, acceptRide, rejectRide, driverArriving, startRide, compeleteRide };
