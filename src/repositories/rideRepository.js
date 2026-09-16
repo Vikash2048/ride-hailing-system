@@ -1,22 +1,27 @@
 import { pool } from "../config/db.js";
 
-const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng) => {
+const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey) => {
+
     const result = await pool.query(
         `INSERT INTO rides (
             rider_id,
             pickup_lat,
             pickup_lng,
             dropoff_lat,
-            dropoff_lng
+            dropoff_lng,
+            idempotency_key
         )
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (idempotency_key)
+        DO UPDATE SET id = rides.id
         RETURNING *`,
         [
             riderId,
             pickupLat,
             pickupLng,
             dropoffLat,
-            dropoffLng
+            dropoffLng,
+            idempotencyKey
         ]
     );
 

@@ -3,12 +3,20 @@ import rideService from "../services/rideService.js";
 const createRide = async (req, res) => {
     try {
         const { riderId, pickup, dropoff } = req.body;
+        const idempotencyKey = req.headers["idempotency-key"];
 
         if (!riderId || !pickup?.latitude || !pickup?.longitude || !dropoff?.latitude || !dropoff?.longitude ) {
             return res.status(400).json({
                 error: "Invalid ride request"
             });
         }
+
+        if (!idempotencyKey) {
+            return res.status(400).json({
+                error: "Idempotency-key header is required"
+            });
+        }
+
         console.log("creating ride...")
 
         const ride = await rideService.createRide(
@@ -16,7 +24,8 @@ const createRide = async (req, res) => {
             pickup.latitude,
             pickup.longitude,
             dropoff.latitude,
-            dropoff.longitude
+            dropoff.longitude,
+            idempotencyKey
         );
 
         res.status(201).json(ride)

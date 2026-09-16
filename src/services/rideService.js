@@ -3,9 +3,9 @@ import driverService from "./driverService.js";
 import { redis } from "../config/redis.js";
 import fareService from "./fareService.js";
 
-const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng) => {
+const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey) => {
     //1. create ride
-    const ride = await riderRepository.createRide(riderId, pickupLat, pickupLng, dropoffLat, dropoffLng);
+    const ride = await riderRepository.createRide(riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey);
     console.log("ride created")
     
     //2. find nearby available drivers
