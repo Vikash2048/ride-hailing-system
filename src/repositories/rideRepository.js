@@ -23,6 +23,17 @@ const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng)
     return result.rows[0];
 };
 
+const getRideById = async (rideId) => {
+    const result = await pool.query(
+        `SELECT *
+        FROM rides
+        WHERE id = $1`,
+        [rideId]
+    );
+
+    return result.rows[0];
+}
+
 const assignDriver = async (rideId, driverId) => {
     const result = await pool.query(
         `UPDATE rides
@@ -92,4 +103,35 @@ const driverArriving = async (rideId, driverId) => {
     return result.rows[0];
 };
 
-export default { createRide, assignDriver, acceptRide, rejectRide, clearDriver, driverArriving };
+const startRide = async (rideId, driverId) => {
+    const result = await pool.query(
+        `UPDATE rides
+        SET status = 'IN_PROGRESS',
+            started_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+            AND driver_id = $2
+            AND status = 'DRIVER_ARRIVING'
+        RETURNING *`,
+        [rideId, driverId]
+    );
+
+    return result.rows[0];
+}
+
+const completeRide = async (rideId, driverId, fare) => {
+    const result = await pool.query(
+        `UPDATE rides
+        SET status = 'COMPLETED',
+            completed_at = CURRENT_TIMESTAMP,
+            fare = $1
+        WHERE id = $2
+            AND driver_id = $3
+            AND status = 'IN_PROGRESS'
+        RETURNING *`,
+        [fare, rideId, driverId]
+    );
+
+    return result.rows[0];
+}
+
+export default { createRide, assignDriver, acceptRide, rejectRide, clearDriver, driverArriving, startRide,  completeRide, getRideById };
