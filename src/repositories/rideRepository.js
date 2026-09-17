@@ -1,22 +1,27 @@
 import { pool } from "../config/db.js";
 
-const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng) => {
+const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey) => {
+
     const result = await pool.query(
         `INSERT INTO rides (
             rider_id,
             pickup_lat,
             pickup_lng,
             dropoff_lat,
-            dropoff_lng
+            dropoff_lng,
+            idempotency_key
         )
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (idempotency_key)
+        DO UPDATE SET id = rides.id
         RETURNING *`,
         [
             riderId,
             pickupLat,
             pickupLng,
             dropoffLat,
-            dropoffLng
+            dropoffLng,
+            idempotencyKey
         ]
     );
 
@@ -134,4 +139,32 @@ const completeRide = async (rideId, driverId, fare) => {
     return result.rows[0];
 }
 
-export default { createRide, assignDriver, acceptRide, rejectRide, clearDriver, driverArriving, startRide,  completeRide, getRideById };
+const cancelRide = async (rideId, riderId) => {
+    const result = await pool.query(
+        `UPDATE rides
+        SET status = 'CANCELLED'
+        WHERE id = $1
+            AND rider_id = $2
+            AND status IN ('REQUESTED', 'ACCEPTED')
+        RETURNING *`,
+        [rideId, riderId]
+    );
+
+    return result.rows[0];
+}
+
+const getRidesByRider = async (riderId, limit, offset) => {
+    const result = await pool.query(
+        `SELECT *
+        FROM rides
+        WHERE rides_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+        OFFSET $3`,
+        [riderId, limit, offset]
+    );
+
+    return result.rows;
+}
+
+export default { createRide, assignDriver, acceptRide, rejectRide, clearDriver, driverArriving, startRide,  completeRide, getRideById, cancelRide, getRidesByRider };

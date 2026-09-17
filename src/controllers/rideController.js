@@ -3,12 +3,20 @@ import rideService from "../services/rideService.js";
 const createRide = async (req, res) => {
     try {
         const { riderId, pickup, dropoff } = req.body;
+        const idempotencyKey = req.headers["idempotency-key"];
 
         if (!riderId || !pickup?.latitude || !pickup?.longitude || !dropoff?.latitude || !dropoff?.longitude ) {
             return res.status(400).json({
                 error: "Invalid ride request"
             });
         }
+
+        if (!idempotencyKey) {
+            return res.status(400).json({
+                error: "Idempotency-key header is required"
+            });
+        }
+
         console.log("creating ride...")
 
         const ride = await rideService.createRide(
@@ -16,7 +24,8 @@ const createRide = async (req, res) => {
             pickup.latitude,
             pickup.longitude,
             dropoff.latitude,
-            dropoff.longitude
+            dropoff.longitude,
+            idempotencyKey
         );
 
         res.status(201).json(ride)
@@ -146,4 +155,42 @@ const compeleteRide = async (req, res) => {
     }
 }
 
-export default { createRide, acceptRide, rejectRide, driverArriving, startRide, compeleteRide };
+const cancelRide = async (req, res) => {
+    try {
+        const { rideId } = req.params;
+        const { riderId } = req.body;
+
+        const ride = await rideService.cancelRide(rideId, riderId);
+
+        if (!ride) {
+            return res.status(409).json({
+                error: "Ride cannot be cancelled"
+            })
+        }
+
+        res.json(ride);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            error: "Failed to cancel ride"
+        })
+    }
+}
+
+const getRidesByRider = async (req, res) => {
+    try {
+        const { riderId } = req.params;
+
+        const page = Math.max(parseInt(req.query.page) || 1, 1);
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const rides = await rideService.getRidesByRider(riderId, page, limit);
+        res.json(rides);
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({
+            error: "Failed to fetch the ride history"
+        });
+    }
+}
+
+export default { createRide, acceptRide, rejectRide, driverArriving, startRide, compeleteRide, cancelRide, getRidesByRider };

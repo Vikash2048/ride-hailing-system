@@ -3,9 +3,9 @@ import driverService from "./driverService.js";
 import { redis } from "../config/redis.js";
 import fareService from "./fareService.js";
 
-const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng) => {
+const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey) => {
     //1. create ride
-    const ride = await riderRepository.createRide(riderId, pickupLat, pickupLng, dropoffLat, dropoffLng);
+    const ride = await riderRepository.createRide(riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey);
     console.log("ride created")
     
     //2. find nearby available drivers
@@ -148,4 +148,28 @@ const completeRide = async (rideId, driverId) => {
     return await riderRepository.completeRide(rideId, driverId, fare);
 }
 
-export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver, driverArriving, startRide, completeRide };
+const cancelRide = async (rideId, riderId) => {
+    const ride = await riderRepository.cancelRide(rideId, riderId);
+
+    if (!ride) {
+        return null;
+    }
+
+    // release driver if ride was already accepted
+    if (ride.driver_id) {
+        await driverService.releaseDriver(ride.driver_id, ride.id);
+    }
+
+    // notify matching process
+    await redis.set(`ride:response:${rideId}`,"CANCELLED"    );
+    
+
+    return ride;
+}
+
+const getRidesByRider = async (riderId, page=1, limit=20) => {
+    const offset = (page - 1) * limit;
+    return await riderRepository.getRidesByRider(riderId, limit, offset);
+};
+
+export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver, driverArriving, startRide, completeRide, cancelRide, getRidesByRider };
