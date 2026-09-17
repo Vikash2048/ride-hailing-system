@@ -148,4 +148,23 @@ const completeRide = async (rideId, driverId) => {
     return await riderRepository.completeRide(rideId, driverId, fare);
 }
 
-export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver, driverArriving, startRide, completeRide };
+const cancelRide = async (rideId, riderId) => {
+    const ride = await riderRepository.cancelRide(rideId, riderId);
+
+    if (!ride) {
+        return null;
+    }
+
+    // release driver if ride was already accepted
+    if (ride.driver_id) {
+        await driverService.releaseDriver(ride.driver_id, ride.id);
+    }
+
+    // notify matching process
+    await redis.set(`ride:response:${rideId}`,"CANCELLED"    );
+    
+
+    return ride;
+}
+
+export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver, driverArriving, startRide, completeRide, cancelRide };

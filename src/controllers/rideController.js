@@ -155,4 +155,26 @@ const compeleteRide = async (req, res) => {
     }
 }
 
-export default { createRide, acceptRide, rejectRide, driverArriving, startRide, compeleteRide };
+const cancelRide = async (req, res) => {
+    try {
+        const { rideId } = req.params;
+        const { riderId } = req.body;
+
+        const ride = await rideService.cancelRide(rideId, riderId);
+
+        if (!ride) {
+            return res.status(409).json({
+                error: "Ride cannot be cancelled"
+            })
+        }
+
+        res.json(ride);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            error: "Failed to cancel ride"
+        })
+    }
+}
+
+export default { createRide, acceptRide, rejectRide, driverArriving, startRide, compeleteRide, cancelRide };
