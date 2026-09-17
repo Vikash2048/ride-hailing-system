@@ -10,5 +10,6 @@ router.post("/:rideId/arriving", rideController.driverArriving);
 router.post("/:rideId/start", rideController.startRide);
 router.post("/:rideId/complete", rideController.compeleteRide);
 router.post("/:rideId/cancel", rideController.cancelRide);
+router.post("/users/:riderId", rideController.getRidesByRider);
 
 export default router;

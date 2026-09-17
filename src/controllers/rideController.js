@@ -177,4 +177,20 @@ const cancelRide = async (req, res) => {
     }
 }
 
-export default { createRide, acceptRide, rejectRide, driverArriving, startRide, compeleteRide, cancelRide };
+const getRidesByRider = async (req, res) => {
+    try {
+        const { riderId } = req.params;
+
+        const page = Math.max(parseInt(req.query.page) || 1, 1);
+        const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+        const rides = await rideService.getRidesByRider(riderId, page, limit);
+        res.json(rides);
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({
+            error: "Failed to fetch the ride history"
+        });
+    }
+}
+
+export default { createRide, acceptRide, rejectRide, driverArriving, startRide, compeleteRide, cancelRide, getRidesByRider };

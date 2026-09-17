@@ -153,4 +153,18 @@ const cancelRide = async (rideId, riderId) => {
     return result.rows[0];
 }
 
-export default { createRide, assignDriver, acceptRide, rejectRide, clearDriver, driverArriving, startRide,  completeRide, getRideById, cancelRide };
+const getRidesByRider = async (riderId, limit, offset) => {
+    const result = await pool.query(
+        `SELECT *
+        FROM rides
+        WHERE rides_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+        OFFSET $3`,
+        [riderId, limit, offset]
+    );
+
+    return result.rows;
+}
+
+export default { createRide, assignDriver, acceptRide, rejectRide, clearDriver, driverArriving, startRide,  completeRide, getRideById, cancelRide, getRidesByRider };

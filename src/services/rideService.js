@@ -167,4 +167,9 @@ const cancelRide = async (rideId, riderId) => {
     return ride;
 }
 
-export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver, driverArriving, startRide, completeRide, cancelRide };
+const getRidesByRider = async (riderId, page=1, limit=20) => {
+    const offset = (page - 1) * limit;
+    return await riderRepository.getRidesByRider(riderId, limit, offset);
+};
+
+export default { createRide, acceptRide, rejectRide, waitForDriverResponse, matchDriver, driverArriving, startRide, completeRide, cancelRide, getRidesByRider };
