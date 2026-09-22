@@ -1,5 +1,5 @@
 services:
-  
+
   postgres:
     image: postgres:16-alpine
     container_name: ride_hailing_postgres
@@ -18,5 +18,38 @@ services:
     ports:
       - "6379:6379"
 
+  # Single-node Redpanda broker (Kafka-API compatible), used by src/config/kafka.js.
+  kafka:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.1.6
+    container_name: ride_hailing_kafka
+    command:
+      - redpanda
+      - start
+      - --kafka-addr internal://0.0.0.0:9093,external://0.0.0.0:9092
+      - --advertise-kafka-addr internal://kafka:9093,external://localhost:9092
+      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr internal://kafka:8082,external://localhost:18082
+      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr kafka:33145
+      - --advertise-rpc-addr kafka:33145
+      - --smp 1
+      - --memory 1G
+      - --mode dev-container
+      - --default-log-level=info
+    ports:
+      - "9092:9092"
+      - "18081:18081"
+      - "18082:18082"
+      - "9644:9644"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
 volumes:
   postgres_data:
+  redpanda_data:

@@ -2,10 +2,11 @@ import riderRepository from "../repositories/rideRepository.js";
 import driverService from "./driverService.js";
 import { redis } from "../config/redis.js";
 import fareService from "./fareService.js";
+import { publishRideCreated } from "../kafka/rideProducer.js";
 
 const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey) => {
     //1. create ride
-    const ride = await riderRepository.createRide(riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey);
+    const rideResult = await riderRepository.createRide(riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey);
     console.log("ride created")
     
     //2. find nearby available drivers
@@ -13,14 +14,14 @@ const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng,
     console.log("nearby driver found")
     
     // 3.no driver available
-    if (drivers.length === 0) return ride;
+    if (drivers.length === 0) return rideResult.ride;
     
     // 4. Match drivers sequentially
-    matchDriver(ride, drivers).catch(error => {
+    matchDriver(rideResult.ride, drivers).catch(error => {
         console.error("Driver matching failed: ", error);
     });
 
-    return ride;
+    return rideResult.ride;
 };
 
 const acceptRide = async (rideId, driverId) => {
