@@ -1,5 +1,7 @@
 import { redis } from "../config/redis.js";
 import driverService from "../services/driverService.js";
+import { pool } from "../config/db.js";
+import { emitRideEvent } from "../socket/socket.js";
 
 const createDriver = async (req, res) => {
     try {
@@ -96,6 +98,20 @@ const updateLocation = async (req, res) => {
             latitude,
             member: driverId
         });
+
+        const rideId = await redis.get(`driver:ride:${driverId}`);
+
+        if (rideId) {
+            emitRideEvent(
+                rideId,
+                "DRIVER_LOCATION_UPDATED",
+                {
+                    driverId,
+                    latitude,
+                    longitude
+                }
+            );
+        }
 
         res.json({
             message: "Location updated"

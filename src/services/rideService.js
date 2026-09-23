@@ -2,6 +2,7 @@ import riderRepository from "../repositories/rideRepository.js";
 import driverService from "./driverService.js";
 import { redis } from "../config/redis.js";
 import fareService from "./fareService.js";
+import { emitRideEvent } from "../socket/socket.js";
 import { publishRideCreated } from "../kafka/rideProducer.js";
 
 const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey) => {
@@ -11,7 +12,7 @@ const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng,
     
     //2. find nearby available drivers
     const drivers = await driverService.findNearbyDrivers(pickupLat, pickupLng, 5);
-    console.log("nearby driver found")
+    console.log("nearby driver found: ",drivers)
     
     // 3.no driver available
     if (drivers.length === 0) return rideResult.ride;
@@ -36,6 +37,21 @@ const acceptRide = async (rideId, driverId) => {
     
     // confirm reservation
     await driverService.confirmDriver(driverId, rideId);
+
+    // so that we know driver is assign to which ride using redis
+    await redis.set(`driver:ride:${driverId}`, rideId);
+
+    // Notify rider
+    emitRideEvent(
+        ride.id,
+        "DRIVER_ACCEPTED",
+        {
+            driverId: ride.driver_id,
+            status: ride.status,
+            acceptedAt: ride.accepted_at
+        }
+    );
+
     return ride;
 }
 
@@ -130,11 +146,36 @@ const matchDriver = async (ride, drivers) => {
 }
 
 const driverArriving = async (rideId, driverId) => {
-    return await riderRepository.driverArriving(rideId, driverId);
+    const ride = await riderRepository.driverArriving(rideId, driverId);
+
+    emitRideEvent(
+        ride.id,
+        "DRIVER_ARRIVING",
+        {
+            driverId: ride.driver_id,
+            status: ride.status
+        }
+    );
+
+    return ride;
+
 }
 
 const startRide = async (rideId, driverId) => {
-    return await riderRepository.startRide(rideId, driverId);
+    const ride = await riderRepository.startRide(rideId, driverId);
+
+    emitRideEvent(
+        ride.id,
+        "RIDE_STARTED",
+        {
+            driverId: ride.driver_id,
+            status: ride.status,
+            startedAt: ride.started_at
+        }
+    );
+
+    return ride;
+
 }
 
 const completeRide = async (rideId, driverId) => {
@@ -146,23 +187,47 @@ const completeRide = async (rideId, driverId) => {
 
     const fare = await fareService.calculateFare(ride);
 
-    return await riderRepository.completeRide(rideId, driverId, fare);
+    const ride_status = await riderRepository.completeRide(rideId, driverId, fare);
+
+    await redis.del(`driver:ride:${driverId}`);
+    
+    emitRideEvent(
+        ride.id,
+        "RIDE_COMPLETED",
+        {
+            driverId: ride.driver_id,
+            status: ride.status,
+            fare: ride.fare,
+            completedAt: ride.completed_at
+        }
+    );
+    
+    return ride_status;
 }
 
 const cancelRide = async (rideId, riderId) => {
     const ride = await riderRepository.cancelRide(rideId, riderId);
-
+    
     if (!ride) {
         return null;
     }
-
+    
     // release driver if ride was already accepted
     if (ride.driver_id) {
         await driverService.releaseDriver(ride.driver_id, ride.id);
     }
-
+    
     // notify matching process
     await redis.set(`ride:response:${rideId}`,"CANCELLED"    );
+    await redis.del(`driver:ride:${ride.driverId}`);
+
+    emitRideEvent(
+        ride.id,
+        "RIDE_CANCELLED",
+        {
+            status: ride.status
+        }
+    )
     
 
     return ride;
