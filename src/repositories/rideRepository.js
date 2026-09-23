@@ -16,7 +16,7 @@ const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng,
         )
         VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (idempotency_key)
-        DO UPDATE SET id = rides.id
+        DO NOTHING
         RETURNING *`,
         [
             riderId,

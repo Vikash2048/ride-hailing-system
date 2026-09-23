@@ -11,6 +11,8 @@ const publishEvents = async () => {
          LIMIT 100`
     );
 
+    console.log("publish Event result : ", result.rows)
+
     for (const event of result.rows) {
         try {
             await producer.send({
@@ -19,6 +21,7 @@ const publishEvents = async () => {
                     {
                         key: event.aggregate_id,
                         value: JSON.stringify({
+                            eventId: event.id,  // to unique identify the events
                             event: event.event_type,
                             ...event.payload
                         })
