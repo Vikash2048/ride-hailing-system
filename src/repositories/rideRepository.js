@@ -1,8 +1,11 @@
 import { pool } from "../config/db.js";
 
 const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng, idempotencyKey) => {
+    const client = await pool.connect();
+    await client.query("BEGIN");
 
-    const result = await pool.query(
+    try {
+        const result = await client.query(
         `INSERT INTO rides (
             rider_id,
             pickup_lat,
@@ -13,7 +16,7 @@ const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng,
         )
         VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (idempotency_key)
-        DO UPDATE SET id = rides.id
+        DO NOTHING
         RETURNING *`,
         [
             riderId,
@@ -25,7 +28,57 @@ const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng,
         ]
     );
 
-    return result.rows[0];
+    // Existing idempotent request
+    if (result.rows.length === 0) {
+        const existing = await client.query(
+            `SELECT * 
+            FROM rides
+            WHERE idempotency_key = $1`,
+            [idempotencyKey]
+        );
+
+        await client.query("COMMIT");
+
+        return { ride: existing.rows[0], created: false}
+        
+    }
+
+    const ride = result.rows[0];
+
+    // create outbox event
+    await client.query(
+        `INSERT INTO outbox_events (
+            event_type,
+            aggregate_id,
+            payload
+        )
+        VALUES ($1, $2, $3)`,
+        [
+            "RideCreated",
+            ride.id,
+            JSON.stringify({
+                rideId: ride.id,
+                riderId: ride.rider_id,
+                pickupLat: ride.pickup_lat,
+                pickupLng: ride.pickup_lng,
+                dropoffLat: ride.dropoff_lat,
+                dropoffLng: ride.dropoff_lng
+            })
+        ]
+    );
+
+    await client.query("COMMIT");
+
+    return { ride, created: true };
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
+
+    
+    
 };
 
 const getRideById = async (rideId) => {

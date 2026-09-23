@@ -1,6 +1,6 @@
 {
   "name": "ride_hailing_system",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Implement user/ola type application",
   "main": "app.js",
   "type": "module",
@@ -22,6 +22,7 @@
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "kafkajs": "^2.2.4",
     "node-pg-migrate": "^9.0.0",
     "pg": "^8.23.0",
     "redis": "^6.2.1"

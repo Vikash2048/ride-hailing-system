@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { pool } from "./config/db.js";
 import { redis } from "./config/redis.js";
+import { producer } from "./config/kafka.js";
 import userRouter from "./routes/userRoutes.js";
 import driverRouter from "./routes/driverRoutes.js";
 import rideRouter from "./routes/rideRoutes.js"
@@ -10,6 +11,7 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
+const APP_VERSION = process.env.APP_VERSION || "v1";
 
 app.use(express.json());
 
@@ -27,8 +29,11 @@ const startServer = async () => {
         await pool.query("select now()");
         console.log("Postgres connected");
 
+        await producer.connect();
+        console.log("Kafka producer connected");
+
         app.listen(process.env.APP_PORT||PORT, () => {
-            console.log(`Server is running on port: ${process.env.APP_PORT||PORT}`)
+            console.log(`Server is running on port: ${process.env.APP_PORT||PORT}, app version: ${APP_VERSION}`)
         })
 
     } catch (error) {
