@@ -1,4 +1,4 @@
-import { producer } from "./config/kafka.js";
+import { producer } from "../config/kafka.js";
 
 const test = async () => {
     await producer.connect();

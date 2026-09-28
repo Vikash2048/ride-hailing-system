@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket Test</title>
+</head>
+
+<body>
+
+<h2>Socket.IO Test</h2>
+
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+<script>
+    const socket = io("http://localhost:3001");
+
+    socket.on("connect", () => {
+        console.log("driver connected:", socket.id);
+        // socket.emit("joinRide", "693be98a-6e3a-4580-b816-efef69f52279");
+    });
+
+    socket.on("DRIVER_ACCEPTED", (data) => {
+    console.log("Driver Accepted:", data);
+    }); 
+    socket.on("DRIVER_ARRIVING", (data) => {
+    console.log("Driver arriving:", data);
+    }); 
+    socket.on("RIDE_STARTED", (data) => {
+    console.log("Ride started:", data);
+    }); 
+    socket.on("RIDE_COMPLETED", (data) => {
+    console.log("Ride completed:", data);
+    }); 
+    socket.on("RIDE_CANCELLED", (data) => {
+    console.log("Ride cancelled:", data);
+    }); 
+    socket.on("DRIVER_LOCATION_UPDATED", (data) => {
+        console.log("Driver location : ", data)
+    })
+
+    socket.on("disconnect", () => {
+        console.log("Disconnected");
+    });
+</script>
+
+</body>
+</html>
