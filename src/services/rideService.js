@@ -11,7 +11,7 @@ const createRide = async (riderId, pickupLat, pickupLng, dropoffLat, dropoffLng,
     console.log("ride created")
     
     //2. find nearby available drivers
-    const drivers = await driverService.findNearbyDrivers(pickupLat, pickupLng, 5);
+    const drivers = await driverService.findNearbyDrivers(pickupLat, pickupLng, 10);
     console.log("nearby driver found: ",drivers)
     
     // 3.no driver available
@@ -33,7 +33,7 @@ const acceptRide = async (rideId, driverId) => {
     }
 
     // tell matcher that driver accepted
-    await redis.set(`ride:response:${rideId}`,"ACCEPTED");
+    await redis.set(`ride:response:${rideId}:${driverId}`,"ACCEPTED");
     
     // confirm reservation
     await driverService.confirmDriver(driverId, rideId);
@@ -65,85 +65,105 @@ const rejectRide = async (rideId, driverId) => {
     // release driver
     // await redis.del(`driver:lock:${driverId}`);
     // await redis.set(`driver:status:${driverId}`, "AVAILABLE");
-    await redis.set(`ride:response:${rideId}`,"REJECTED");
+    await redis.set(`ride:response:${rideId}:${driverId}`,"REJECTED");
 
     return ride;
 }
 
-const waitForDriverResponse = async (rideId, timeout = 10000) => {
-    return new Promise( async (resolve) => {
-        const key = `ride:response:${rideId}`;
+const waitForDriverResponse = async (rideId, driverId) => {
+    const key = `ride:response:${rideId}:${driverId}`;
 
-        await redis.set(key, "WAITING", {
-            EX: 15
-        });
+    await redis.set(key, "WAITING", {
+        EX: 15
+    });
 
-        const start = Date.now();
-        const check = async () => {
-            const response = await redis.get(key);
-            if (response === "ACCEPTED") {
-                return resolve(true);
-            }
+    const timeout = 10000;
+    const interval = 500;
 
-            if (response === "REJECTED") {
-                return resolve(false);
-            }
+    const start = Date.now();
 
-            if (Date.now() - start >= timeout) {
-                return resolve(false);
-            }
+    while (Date.now() - start < timeout) {
+        const response = await redis.get(key);
 
-            setTimeout(check, 500);
+        if (response === "ACCEPTED") {
+            return true;
         }
 
-        check();
-    });
-}
+        if (response === "REJECTED") {
+            return false;
+        }
+
+        await new Promise(resolve =>
+            setTimeout(resolve, interval)
+        );
+    }
+
+    return false;
+};
 
 const matchDriver = async (ride, drivers) => {
-    for (const driver of drivers) {
-        console.log(`Trying driver: ${driver.driverId}`);
+    console.log(`Sending ride ${ride.id} to ${drivers.length} drivers`);
 
-        //1. Reserver driver
-        const reserved = await driverService.reserveDriver(driver.driverId, ride.id);
+    const offers = drivers.map(async (driver) => {
+
+        const reserved = await driverService.reserveDriver(driver.driverId,ride.id);
 
         if (!reserved) {
-            console.log(`Driver ${driver.driverId} could not be reserved`);
-
-            continue;
+            return null;
         }
 
         console.log(`Driver ${driver.driverId} reserved`);
 
-        // 2. Assign driver to ride
-        await riderRepository.assignDriver(ride.id,driver.driverId);
-
-        // 3. Wait for driver response
-        const accepted = await waitForDriverResponse(ride.id);
-
-        // 4. Driver accepted
-        if (accepted) {
-            console.log(`Driver ${driver.driverId} accepted ride ${ride.id}`);
-            return driver;
-        }
-
-        console.log(
-            `Driver ${driver.driverId} rejected/timed out`
+        await riderRepository.assignDriver(ride.id,driver.driverId
         );
 
-        // 5. Driver rejected / timeout
-        await driverService.releaseDriver(driver.driverId,ride.id);
+        const accepted = await waitForDriverResponse(
+            ride.id,
+            driver.driverId
+        );
 
-        // 6. Release driver
-        await riderRepository.clearDriver(ride.id, driver.driverId);
+        if (!accepted) {
+            await driverService.releaseDriver(
+                driver.driverId,
+                ride.id
+            );
 
-        console.log(`Driver ${driver.driverId} released`);
+            await riderRepository.clearDriver(
+                ride.id,
+                driver.driverId
+            );
 
-        
+            return null;
+        }
+
+        return driver;
+    });
+
+    const results = await Promise.all(offers);
+
+    const winner = results.find(
+        driver => driver !== null
+    );
+
+    if (!winner) {
+        console.log("No driver accepted");
+        return null;
     }
-    console.log("No driver available");
-    return null;
-}
+
+    console.log(`Winner driver: ${winner.driverId}`);
+
+    // release rest all driver
+    for (const driver of drivers) {
+        if (driver.driverId === winner.driverId) {
+            continue;
+        }
+
+        await driverService.releaseDriver(driver.driverId, ride.id);
+        await riderRepository.clearDriver(ride.id, driver.driverId);
+    }
+
+    return winner || null;
+};
 
 const driverArriving = async (rideId, driverId) => {
     const ride = await riderRepository.driverArriving(rideId, driverId);

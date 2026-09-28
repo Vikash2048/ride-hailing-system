@@ -108,16 +108,18 @@ const assignDriver = async (rideId, driverId) => {
 const acceptRide = async (rideId, driverId) => {
     const result = await pool.query(
         `UPDATE rides
-        SET status = 'ACCEPTED',
+        SET 
+            status = 'ACCEPTED',
             accepted_at = CURRENT_TIMESTAMP
-        WHERE id = $1
+        WHERE 
+            id = $1
             AND driver_id = $2
             AND status = 'REQUESTED'
         RETURNING *`,
         [rideId, driverId]
     );
 
-    return result.rows[0];
+    return result.rows[0] || null;
 }
 
 const rejectRide = async (rideId, driverId) => {

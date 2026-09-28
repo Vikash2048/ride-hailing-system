@@ -51,7 +51,7 @@ const findNearbyDrivers = async (latitude, longitude, radiusKm) => {
 const reserveDriverScript = `
 local status = redis.call("GET", KEYS[1])
 
-if not status or status ~= "AVAILABLE" then
+if status ~= "AVAILABLE" then
     return 0
 end
 
@@ -61,14 +61,12 @@ local locked = redis.call(
     ARGV[1],
     "NX",
     "EX",
-    20
+    10
 )
 
 if not locked then
     return 0
 end
-
-redis.call("SET", KEYS[1], "BUSY")
 
 return 1
 `;
@@ -106,6 +104,8 @@ const releaseDriver = async (driverId, rideId) => {
 
 const confirmDriver = async (driverId, rideId) => {
     const lockKey = `driver:lock:${driverId}`;
+    const statusKey = `driver:status:${driverId}`;
+
     const lockRideId = await redis.get(lockKey);
 
     if (lockRideId !== rideId) {
@@ -115,6 +115,7 @@ const confirmDriver = async (driverId, rideId) => {
     // Reservation is confirm
     // Driver remains BUSY
     await redis.del(lockKey);
+    await redis.set(statusKey, "BUSY");
 
     return true;
 }
