@@ -2,10 +2,17 @@ import rideService from "../services/rideService.js";
 
 const createRide = async (req, res) => {
     try {
-        const { riderId, pickup, dropoff } = req.body;
+        const { pickup, dropoff } = req.body;
+        const riderId = req.user?.userId;
         const idempotencyKey = req.headers["idempotency-key"];
 
-        if (!riderId || !pickup?.latitude || !pickup?.longitude || !dropoff?.latitude || !dropoff?.longitude ) {
+        if (!riderId) {
+            return res.status(401).json({
+                error: "Authentication required"
+            });
+        }
+
+        if (!pickup?.latitude || !pickup?.longitude || !dropoff?.latitude || !dropoff?.longitude ) {
             return res.status(400).json({
                 error: "Invalid ride request"
             });

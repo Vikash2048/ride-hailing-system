@@ -1,9 +1,10 @@
 import express from "express";
 import rideController from "../controllers/rideController.js";
+import {authMiddleware} from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", rideController.createRide);
+router.post("/", authMiddleware, rideController.createRide);
 router.post("/:rideId/accept",rideController.acceptRide);
 router.post("/:rideId/reject",rideController.rejectRide);
 router.post("/:rideId/arriving", rideController.driverArriving);
