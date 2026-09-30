@@ -205,9 +205,13 @@ const completeRide = async (rideId, driverId) => {
         return null;
     }
 
-    const fare = await fareService.calculateFare(ride);
+    const { fare, distanceKm } = fareService.calculateFare(ride);
 
-    const ride_status = await riderRepository.completeRide(rideId, driverId, fare);
+    const completedRide = await riderRepository.completeRide(
+        rideId,
+        driverId,
+        fare
+    );
 
     await redis.del(`driver:ride:${driverId}`);
     
@@ -215,14 +219,15 @@ const completeRide = async (rideId, driverId) => {
         ride.id,
         "RIDE_COMPLETED",
         {
-            driverId: ride.driver_id,
+            driverId,
+            fare,
+            distanceKm,
             status: ride.status,
-            fare: ride.fare,
-            completedAt: ride.completed_at
+            completedAt: completeRide.completed_at
         }
     );
     
-    return ride_status;
+    return completedRide;
 }
 
 const cancelRide = async (rideId, riderId) => {

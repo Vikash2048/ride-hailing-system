@@ -8,6 +8,7 @@ import driverRouter from "./routes/driverRoutes.js";
 import rideRouter from "./routes/rideRoutes.js";
 import http from "http";
 import { initializeSocket } from "./socket/socket.js";
+import fareService from "./services/fareService.js";
 
 dotenv.config();
 
@@ -22,6 +23,15 @@ const server = http.createServer(app);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/drivers", driverRouter);
 app.use("/api/v1/rides", rideRouter);
+
+const ride = {
+    pickup_lat: 28.6139,
+    pickup_lng: 77.2090,
+    dropoff_lat: 28.4595,
+    dropoff_lng: 77.0266
+};
+
+console.log(fareService.calculateFare(ride));
 
 const startServer = async () => {
     try {
