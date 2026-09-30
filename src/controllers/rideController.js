@@ -1,3 +1,4 @@
+import driverRepository from "../repositories/driverRepository.js";
 import rideService from "../services/rideService.js";
 
 const createRide = async (req, res) => {
@@ -48,8 +49,10 @@ const createRide = async (req, res) => {
 
 const acceptRide = async (req, res) => {
     try {
+        const driver = await driverRepository.getDriverByUserId(req.user.userId);
+
         const { rideId } = req.params;
-        const { driverId }  = req.body;
+        const driverId = driver.id;
 
         const ride = await rideService.acceptRide(rideId, driverId);
 
@@ -70,8 +73,9 @@ const acceptRide = async (req, res) => {
 
 const rejectRide = async (req, res) => {
     try {
+        const driver = await driverRepository.getDriverByUserId(req.user.userId);
         const { rideId } = req. params;
-        const { driverId } = req.body;
+        const driverId = driver.id;
 
         const ride = await rideService.rejectRide(rideId, driverId);
 
@@ -93,8 +97,10 @@ const rejectRide = async (req, res) => {
 
 const driverArriving = async (req, res) => {
     try {
+
+        const driver = await driverRepository.getDriverByUserId(req.user.userId);
         const { rideId } = req.params;
-        const { driverId } = req.body;
+        const driverId = driver.id;
 
         console.log("driverArriving: ", rideId, driverId)
 
@@ -119,8 +125,9 @@ const driverArriving = async (req, res) => {
 
 const startRide = async (req, res) => {
     try {
+        const driver = await driverRepository.getDriverByUserId(req.user.userId);
         const { rideId } = req.params;
-        const { driverId } = req.body;
+        const driverId = driver.id;
 
         const ride = await rideService.startRide(rideId, driverId);
 
@@ -141,8 +148,10 @@ const startRide = async (req, res) => {
 
 const compeleteRide = async (req, res) => {
     try {
+        const driver = await driverRepository.getDriverByUserId(req.user.userId);
+
         const { rideId } = req.params;
-        const { driverId } = req.body;
+        const driverId = driver.id;
 
         const ride = await rideService.completeRide(rideId, driverId);
 
@@ -165,7 +174,7 @@ const compeleteRide = async (req, res) => {
 const cancelRide = async (req, res) => {
     try {
         const { rideId } = req.params;
-        const { riderId } = req.body;
+        const riderId = req.user.userId;
 
         const ride = await rideService.cancelRide(rideId, riderId);
 
@@ -186,7 +195,7 @@ const cancelRide = async (req, res) => {
 
 const getRidesByRider = async (req, res) => {
     try {
-        const { riderId } = req.params;
+        const riderId = req.user.userId; 
 
         const page = Math.max(parseInt(req.query.page) || 1, 1);
         const limit = Math.min(parseInt(req.query.limit) || 20, 100);
