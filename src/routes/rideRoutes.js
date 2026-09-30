@@ -1,15 +1,17 @@
 import express from "express";
 import rideController from "../controllers/rideController.js";
+import {authMiddleware} from "../middleware/authMiddleware.js";
+import { requireRole } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", rideController.createRide);
-router.post("/:rideId/accept",rideController.acceptRide);
-router.post("/:rideId/reject",rideController.rejectRide);
-router.post("/:rideId/arriving", rideController.driverArriving);
-router.post("/:rideId/start", rideController.startRide);
-router.post("/:rideId/complete", rideController.compeleteRide);
-router.post("/:rideId/cancel", rideController.cancelRide);
-router.post("/users/:riderId", rideController.getRidesByRider);
+router.post("/", authMiddleware, requireRole("rider"), rideController.createRide);
+router.post("/:rideId/accept", authMiddleware, requireRole("driver"), rideController.acceptRide);
+router.post("/:rideId/reject", authMiddleware, requireRole("driver"), rideController.rejectRide);
+router.post("/:rideId/arriving", authMiddleware, requireRole("driver"), rideController.driverArriving);
+router.post("/:rideId/start", authMiddleware, requireRole("driver"), rideController.startRide);
+router.post("/:rideId/complete", authMiddleware, requireRole("driver"), rideController.compeleteRide);
+router.post("/:rideId/cancel", authMiddleware, requireRole("rider"), rideController.cancelRide);
+router.post("/users/:riderId", authMiddleware, requireRole("rider"), rideController.getRidesByRider);
 
 export default router;

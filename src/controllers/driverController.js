@@ -2,6 +2,7 @@ import { redis } from "../config/redis.js";
 import driverService from "../services/driverService.js";
 import { pool } from "../config/db.js";
 import { emitRideEvent } from "../socket/socket.js";
+import driverRepository from "../repositories/driverRepository.js";
 
 const createDriver = async (req, res) => {
     try {
@@ -26,15 +27,15 @@ const createDriver = async (req, res) => {
 
 const goOnline = async (req, res) => {
     try {
-        const { driverId } = req.params;
+        const driver = await driverRepository.getDriverByUserId( req.user.userId );
 
-        if (!driverId) {
+        if (!driver) {
             return res.status(400).json({
-                error: "driverId is required"
+                error: "driver not found"
             });
         }
 
-        const driver = await driverService.updateDriverStatus(driverId, "AVAILABLE");
+        await driverService.updateDriverStatus(driver.id, "AVAILABLE");
 
         if (!driver) {
             return res.status(404).json({
@@ -43,7 +44,7 @@ const goOnline = async (req, res) => {
         }
 
         await redis.set(
-            `driver:status:${driverId}`,
+            `driver:status:${driver.id}`,
             "AVAILABLE"
         );
 
@@ -58,18 +59,18 @@ const goOnline = async (req, res) => {
 
 const goOffline = async (req, res) => {
     try {
-        const { driverId } = req.params;
+        const driver = await driverRepository.getDriverByUserId(req.user.userId);
 
-        if (!driverId) {
+        if (!driver) {
             res.status(400).json({
                 error: "Driver id missing"
             });
         }
 
-        const driver = await driverService.updateDriverStatus(driverId, "OFFLINE");
+        await driverService.updateDriverStatus(driver.id, "OFFLINE");
 
         await redis.set(
-            `driver:status:${driverId}`,
+            `driver:status:${driver.id}`,
             "OFFLINE"
         );
 
@@ -84,7 +85,7 @@ const goOffline = async (req, res) => {
 
 const updateLocation = async (req, res) => {
     try {
-        const { driverId } = req.params;
+        const driver = await driverRepository.getDriverByUserId(req.user.userId)
         const { latitude, longitude } = req.body;
 
         if (latitude === undefined || longitude === undefined) {
@@ -96,10 +97,12 @@ const updateLocation = async (req, res) => {
         await redis.geoAdd("drivers:locations", {
             longitude,
             latitude,
-            member: driverId
+            member: driver.id
         });
 
-        const rideId = await redis.get(`driver:ride:${driverId}`);
+        const rideId = await redis.get(`driver:ride:${driver.id}`);
+
+        const driverId = driver.id;
 
         if (rideId) {
             emitRideEvent(
