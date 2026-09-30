@@ -2,6 +2,7 @@ import { redis } from "../config/redis.js";
 import driverService from "../services/driverService.js";
 import { pool } from "../config/db.js";
 import { emitRideEvent } from "../socket/socket.js";
+import driverRepository from "../repositories/driverRepository.js";
 
 const createDriver = async (req, res) => {
     try {
@@ -26,15 +27,15 @@ const createDriver = async (req, res) => {
 
 const goOnline = async (req, res) => {
     try {
-        const { driverId } = req.params;
+        const driver = await driverRepository.getDriverByUserId( req.user.userId );
 
-        if (!driverId) {
+        if (!driver) {
             return res.status(400).json({
-                error: "driverId is required"
+                error: "driver not found"
             });
         }
 
-        const driver = await driverService.updateDriverStatus(driverId, "AVAILABLE");
+        await driverService.updateDriverStatus(driver.id, "AVAILABLE");
 
         if (!driver) {
             return res.status(404).json({
@@ -43,7 +44,7 @@ const goOnline = async (req, res) => {
         }
 
         await redis.set(
-            `driver:status:${driverId}`,
+            `driver:status:${driver.id}`,
             "AVAILABLE"
         );
 

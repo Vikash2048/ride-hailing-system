@@ -13,7 +13,7 @@ const createUser = async (name, phone, email, password) => {
 
 const findByPhone = async (phone) => {
     const result = await pool.query(
-        `SELECT id, name, phone, password_hash
+        `SELECT id, name, phone, password_hash, role
         FROM users
         WHERE phone = $1`,
         [phone]
